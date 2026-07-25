@@ -1,0 +1,78 @@
+#!/bin/bash
+
+set -euo pipefail
+
+dirDelta() {
+    parentDir1=$1
+    parentDir2=$2
+
+    if [[ ! -d "$parentDir1" ]]; then
+        echo "$parentDir1 does not exist."
+        exit 1
+    fi
+
+    if [[ ! -d "$parentDir2" ]]; then
+        echo "$parentDir2 does not exist."
+        exit 1
+    fi
+
+    echo "Files not found in $parentDir2:"
+    local filesNotFoundInPath2=()
+    
+    oldIFS=$IFS IFS=""
+    while read -r filePath
+    do
+
+    local fileName="${filePath##*/}"
+    local relativePath="${filePath##*"$parentDir1"/}"
+    local filePath2="$parentDir2/$relativePath"
+
+    if [[ ! -e $filePath2 ]]; then
+        filesNotFoundInPath2+=("$filePath")
+        echo "$filePath"
+    fi
+
+    done < <(find "$parentDir1" -type f)
+    IFS=$oldIFS
+
+    if [[ ${#filesNotFoundInPath2[@]} -eq 0 ]]
+    then
+        echo "$parentDir2 has all the files in $parentDir1."
+    fi
+
+    echo
+    echo "-----------------"
+    echo
+
+    echo "Files not found in $parentDir1:"
+    local filesNotFoundInPath1=()
+    
+    oldIFS=$IFS IFS=""
+    while read -r filePath
+    do
+
+    local fileName="${filePath##*/}"
+    local relativePath="${filePath##*"$parentDir2"/}"
+    local filePath1="$parentDir1/$relativePath"
+
+    if [[ ! -e $filePath1 ]]; then
+        filesNotFoundInPath1+=("$filePath")
+        echo "$filePath"
+    fi
+
+    done < <(find "$parentDir2" -type f)
+    IFS=$oldIFS
+
+    if [[ ${#filesNotFoundInPath1[@]} -eq 0 ]]
+    then
+        echo "$parentDir1 has all the files in $parentDir2."
+    fi
+
+}
+
+if [ $# -ne 2 ] ; then
+    echo "Usage: $0 parentDir1 parentDir2" >&2
+    exit 1
+fi
+
+dirDelta "$1" "$2"
